@@ -81,7 +81,7 @@ void gauss(matrix m, int n)
 		for(j=n-1; j>i; j--)
 		{
 			factor = (m.M[j][i]/m.M[i][i]);
-			for(k=0; k<4; k++) m.M[j][k] -= factor*m.M[i][k];
+			for(k=0; k<n+1; k++) m.M[j][k] -= factor*m.M[i][k];
 		}
 		m = gauss_rearrange(m, i, n);
 	} //operations for bring the matrix to upper triangular form
@@ -105,7 +105,7 @@ void gauss_pivot(matrix m, int n)
 		{
 			if(j == i) continue;
 			factor = (m.M[j][i]/m.M[i][i]);
-			for(k=0; k<4; k++) m.M[j][k] -= factor*m.M[i][k];
+			for(k=0; k<n+1; k++) m.M[j][k] -= factor*m.M[i][k];
 		}
 		m = gauss_rearrange(m, i, n);
 	} //operations for bring the matrix to diagonal form
@@ -156,7 +156,7 @@ matrix gauss_rearrange(matrix m, int i, int n)
 			{
 				if(m.M[j][k]!=0)
 				{
-					for(l=0;l<4;l++)
+					for(l=0;l<n+1;l++)
 					{
 						temp = m.M[k][l];
 						m.M[k][l] = m.M[j][l];
