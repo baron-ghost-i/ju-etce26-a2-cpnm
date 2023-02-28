@@ -99,7 +99,7 @@ double rf(double l, double u, double e)
 	double fl = f(l), fu = f(u);
 	double x = (l*fu - u*fl)/(fu-fl), fx = f(x);
 	if (fl*fu > 0) return null;
-	while(fabs(fx) >= e)
+	while(u-l >= e)
 	{
 		x = (l*fu - u*fl)/(fu-fl);
 		fx = f(x);
@@ -116,7 +116,7 @@ double nr(double l, double u, double e)
 {
 	double x = (l+u)/2;
 	double fx =f(x), dfx = Df(x);
-	while(fabs(fx)>=e)
+	while(u-l>=e)
 	{
 		x = x - fx/dfx;
 		fx = f(x);
