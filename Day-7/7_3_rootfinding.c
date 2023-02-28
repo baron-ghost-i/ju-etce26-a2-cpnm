@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#define f(x) x*x*x - 4*x - 9
-#define Df(x) 3*x*x - 4 //one can use numerical differentiation, but that'll be unnecessarily cumbersome as we are using a known polynomial function
+#define f(x) (x)*(x)*(x)-4*(x)-9
+#define Df(x) 3*(x)*(x)-4 //one can use numerical differentiation, but that'll be unnecessarily cumbersome as we are using a known polynomial function
 #define null '0'
 
 double bisection(double, double, double); //Bisection method
