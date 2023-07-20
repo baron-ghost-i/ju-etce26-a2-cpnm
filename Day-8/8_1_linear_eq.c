@@ -1,199 +1,251 @@
+/*
+	NOTE:
+	Wikipedia provies a more viable and useful method for Gauss and Gauss-Jorban methods
+*/
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
-typedef struct matrix
-{
-	double M[3][4]; //3x4 matrix as it is an augmented matrix
-} matrix; //For passing to functions easily
+//For passing the matrix to functions easily
+typedef struct{
+	double **M;
+	int n; //corresponds to number of equations
+} matrix;
 
-void gauss(matrix, int);
-void gauss_pivot(matrix, int);
+//To avoid accessing m.M repeatedly
+#define mat (m.M)
+#define mat_ (m->M)
+
+/*
+	Gauss method for solving a set of linear equations
+	Parameters:
+	- (matrix) m: The coefficient matrix
+*/
+void gauss(matrix);
+
+/*
+	Gauss Pivoting method (Gauss-Jordan method) for solving a set of linear equations
+	Parameters:
+	- (matrix) m: The coefficient matrix
+*/
+void gauss_pivot(matrix);
+
+
+/*
+	Jacobi method for solving a set of linear equations
+	Parameters:
+	- (matrix) m: The coefficient matrix
+	- (int) maxit: Maximum number of iterations to be performed
+*/
 void jacobi(matrix, int);
-matrix gauss_rearrange(matrix, int, int); //helper function for Gauss method and Gauss method with pivoting
-matrix jacobi_rearrange(matrix, int); //converts system to diagonally-dominant system
 
-int main()
-{
-	matrix M1 = {{{1,1,1,6}, {1,1,-1,0}, {1,-1,1,2}}};
-	matrix M2 = {{{1,1,1,3}, {2,3,1,6}, {1,-1,-1,-3}}};
-	matrix M3 = {{{2,4,2,15}, {2,1,2,-5}, {4,1,-2,0}}};
-	int i, j, ch_eq = 4, ch_mt = 4, ch_rpt = 1;
+//helper functions
+void print_eq(matrix); //prints equations
+int rowmax(double[], int); //locates maxima of a row
+int fnz(double[], int); //locates first nonzero element of a row
+void swap(double*, double*, int); //swaps two rows
+void rearrange(matrix*, int); //rearranges the matrix, with parameter "flag" indicating the method used
+
+int main(){
+	int ch, i, j, maxit;
 	matrix m;
-	while(1)
-	{
-		//Using x1, x2, x3 instead of x, y, z to implement the generalizations more completely
-		printf("\n--------------------------------\n");
-		printf("MENU\n");
-		printf("--------------------------------\n");
-		printf("1. x1+x2+z=6\t2. x1+x2+x3=3  \t3. 2x1+4x2+2x3=15\n");
-		printf("   x1+x2-x3=0\t   2x1+3x2+x3=6\t   2x1+x2+2x3=-5\n");
-		printf("   x1-x2+x3=2\t   x1-x2-x3=-3 \t   4x1+x2-2x3=0\n");
-		printf("Enter the system of equations to solve. To exit, enter 4: ");
-		scanf("%d", &ch_eq);
-		if(ch_eq==4) break;
+	
+	while(1){
+		printf("\n--------------------------------\nMENU\n");
 		printf("--------------------------------\n");
 		printf("1. Gauss Elimination Method\n2. Gauss Elimination with pivoting method\n3. Jacobi's Method\n4. Exit\n");
-		printf("--------------------------------\n");
-		printf("Enter your choice: ");
-		scanf("%d", &ch_mt);
-		if(ch_mt==4) break;
-		switch(ch_eq)
-		{
+		printf("--------------------------------\nEnter your choice: ");
+		scanf("%d", &ch);
+		if(ch==4) exit(0);
+		
+		printf("Enter number of equations: ");
+		scanf("%d", &m.n);
+		
+		mat = (double**)malloc(m.n*sizeof(double*)); //mat is replaced with m.M by the preprocessor through the directive #define
+		for(i=0; i<m.n; i++) mat[i] = (double*)calloc(m.n+1, sizeof(double)); //initializing empty matrix
+		
+		printf("COEFFICIENT MATRIX M:\n---------------------\n");
+		for(i=0; i<m.n; i++)
+			for(j=0; j<m.n+1; j++){
+				printf("Enter M[%d][%d]: ", i+1, j+1);
+				scanf("%lf", &mat[i][j]);
+			}
+		printf("EQUATIONS:\n");
+		print_eq(m);
+		
+		switch(ch){
 			case 1:
-				m = M1;
+				gauss(m);
 				break;
 			case 2:
-				m = M2;
+				gauss_pivot(m);
 				break;
 			case 3:
-				m = M3;
+				printf("Enter maximum number of iterations: ");
+				scanf("%d", &maxit);
+				jacobi(m, maxit);
 				break;
 			default:
-				printf("Invalid choice provided, please try again.\n");
-				continue;
-		}
-		switch(ch_mt)
-		{
-			case 1:
-				gauss(m, 3);
-				break;
-			case 2:
-				gauss_pivot(m, 3);
-				break;
-			case 3:
-				if(ch_eq==1) printf("System is divergent.");
-				else jacobi(m, 3);
-				break;
-			default:
-				printf("Invalid choice provided, please try again.\n");
-				continue;
+				printf("Invalid choice.\n");
 		}
 	}
 	return 0;
 }
 
-void gauss(matrix m, int n)
-{
-	int i, j, k;
-	double factor, x[n];
-	for(i=0;i<n-1;i++)
-	{
-		for(j=n-1; j>i; j--)
-		{
-			factor = (m.M[j][i]/m.M[i][i]);
-			for(k=0; k<n+1; k++) m.M[j][k] -= factor*m.M[i][k];
+void gauss(matrix m){
+	int i, j, k, n = m.n;
+	double factor, s;
+	
+	for(i=0; i<n; i++){
+		rearrange(&m, 0);
+		for(j=i+1; j<n; j++){
+			factor = mat[j][i]/mat[i][i];
+			for(k=0; k<n+1; k++)
+				mat[j][k] -= mat[i][k]*factor;
 		}
-		m = gauss_rearrange(m, i, n);
-	} //operations for bring the matrix to upper triangular form
-	x[n-1] = m.M[n-1][3]/m.M[n-1][n-1];
-	for(i=1;i<n;i++)
-	{
-		x[n-1-i] = m.M[n-1-i][3];
-		for(j=n-1; j>n-1-i; j--) x[n-1-i] -= m.M[n-1-i][j]*x[j];
-		x[n-1-i] /= m.M[n-1-i][n-1-i];
 	}
-	for(i=0;i<n;i++) printf("\nx%d=%lf", i+1, x[i]);
-}
-
-void gauss_pivot(matrix m, int n)
-{
-	int i, j, k;
-	double factor, x[n];
+	
+	/*
+		Solving the equations formed after rearrangement yield the following results:
+		x(n-1) = y(n-1)/mat[n-1][n-1]
+		x(n-2) = (y(n-2) - mat[n-2][n-1]*x(n-1))/mat[n-2][n-2]
+		...
+		x(i) = (y(i) - ( mat[i][i+1]*x(i+1) + mat[i][i+2]*x(i+2) + ... + mat[i][n-1]*x(n-1) ))/mat[i][i]
+		where y(i) == mat[i][n]
+		In the following loop, y(i) will be overwritten by x(i) successively, thus mat[j][n] == x(j)
+	*/
+	
+	for(i=n-1; i>0; i--){
+		s=0;
+		for(j=i+1; j<n; j++)
+			s += mat[i][j]*mat[j][n];
+		mat[i][n] = (mat[i][n] - s)/mat[i][i]; //overwrites y(i) with x(i)
+	} //solving all equations within this loop
 	for(i=0; i<n; i++)
-	{
-		for(j=n-1; j>=0; j--)//similar algorithm as that of Gauss method, but converts to a diagonal matrix
-		{
-			if(j == i) continue;
-			factor = (m.M[j][i]/m.M[i][i]);
-			for(k=0; k<n+1; k++) m.M[j][k] -= factor*m.M[i][k];
-		}
-		m = gauss_rearrange(m, i, n);
-	} //operations for bring the matrix to diagonal form
-	x[n-1] = m.M[n-1][3]/m.M[n-1][n-1];
-	for(i=0;i<n;i++)
-	{
-		for(j=n; j>=0; j--) m.M[i][j] /= m.M[i][i];
-		x[i] = m.M[i][n];
-	} //assigning solutions
-	for(i=0;i<n;i++) printf("\nx%d=%lf", i+1, x[i]);
+		printf("x%d = %lf\n", i+1, mat[i][n]);
 }
 
-void jacobi(matrix m, int n)
-{
-	int i, j, iter, n_i;
-	double s, xk[n], xk1[n];
-	m = jacobi_rearrange(m, n); //rearranging to a diagonally dominant matrix when needed
-	printf("Enter number of iterations to be carried out: ");
-	scanf("%d", &n_i);
-	for(i=0;i<n;i++)
-	{
-		printf("Enter initial assumed value of x%d: ", i+1);
-		scanf("%lf", &xk[i]);
+void gauss_pivot(matrix m){
+	int i, j, k, n = m.n;
+	double factor, s;
+
+	for(i=0; i<n; i++){
+		rearrange(&m, 0);
+		for(j=0; j<n; j++){
+			if(i==j) continue; //to avoid subtracting a row from itself
+			factor = mat[j][i]/mat[i][i];
+			for(k=0; k<n+1; k++)
+				mat[j][k] -= mat[i][k]*factor;
+		}
 	}
-	for(iter=1; iter<=n_i; iter++)
-	{
+	
+	/*
+		Solving the equations formed after rearrangement yield the following results:
+		x(n-1) = y(n-1)/mat[n-1][n-1]
+		x(n-2) = y(n-2)/mat[n-2][n-2]
+		...
+		x(i) = y(i)/mat[i][i]
+		where y(i) == mat[i][n]
+	*/
+	
+	for(i=0; i<n; i++)
+		mat[i][n] /= mat[i][i];
+	for(i=0; i<n; i++)
+		printf("x%d = %lf\n", i+1, mat[i][n]);
+}
+
+void jacobi(matrix m, int maxit){
+	int i, j, n = m.n, iter = 0;
+	double* x = (double*)malloc(n*sizeof(double));
+	double* x1 = (double*)malloc(n*sizeof(double));
+	
+	rearrange(&m, 1);
+	
+	printf("Enter initial guesses:\n");
+	for(i=0; i<n; i++){
+		printf("x%d=", i+1);
+		scanf("%lf", &x[i]);
+	}
+	
+	while(iter < maxit){
+		for(i=0; i<n; i++){
+			x1[i] = mat[i][n];
+			for(j=0; j<n; j++)
+				if(i!=j)
+					x1[i] -= mat[i][j]*x[j];
+			x1[i] /= mat[i][i];
+		}
 		for(i=0; i<n; i++)
-		{
-			s = 0;
-			for(j=0; j<n; j++) if(i!=j) s += m.M[i][j]*xk[j];
-			xk1[i] = (m.M[i][3] - s)/m.M[i][i];
-		}
-		for(i=0; i<n; i++) xk[i] = xk1[i];
+			x[i] = x1[i];
+		iter++;
 	}
-	for(i=0; i<n; i++) printf("x%d=%lf\n", i+1, xk[i]);
-}
-
-//to ensure that no principal diagonal element remains 0 in Gauss methods
-matrix gauss_rearrange(matrix m, int i, int n)
-{
-	int j, k, l;
-	double temp;
-	for(j=i+1; j<=n-1-i; j++)
-	{
-		if(m.M[j][j]==0)
-		{
-			for(k=j+1;k<3;k++)
-			{
-				if(m.M[j][k]!=0)
-				{
-					for(l=0;l<n+1;l++)
-					{
-						temp = m.M[k][l];
-						m.M[k][l] = m.M[j][l];
-						m.M[j][l] = temp;
-					}
-					break;
-				}
-			}
-		}
-	}
-	return m;
-}
-
-matrix jacobi_rearrange(matrix m, int n)
-{
-	int i, j, ind;
-	double temp, maxm;
+	
 	for(i=0; i<n; i++)
-	{
-		ind = i;
-		for(j=0; j<n; j++)
-		{
-			if(fabs(m.M[i][j]) > fabs(m.M[i][i])) //not using real condition for diagonally dominant matrices as no given system satisfies them wholly
-			{
-				maxm = m.M[i][j];
-				ind = j;
+		printf("x%d = %lf\n", i+1, x1[i]);
+}
+
+void rearrange(matrix* m, int flag){
+	int i, j, k, temp, n = m->n;
+	
+	switch(flag){
+		//Gauss & Gauss-Jordan
+		case 0:
+			for(i=0; i<n; i++){
+				temp = fnz(mat_[i], n);
+				if(temp!=i)
+					swap(mat_[i], mat_[temp], n);
 			}
+			break;
+			
+		//Jacobi	
+		case 1:
+			for(i=0; i<n; i++){
+				temp = rowmax(mat_[i], n);
+				if(temp!=i)
+					swap(mat_[i], mat_[temp], n);
+			}
+			break;
+		default:
+			printf("Internal error\n");
+	}
+}
+
+void print_eq(matrix m){
+	int i, j, n = m.n;
+	for(i=0; i<n; i++){
+		for(j=0; j<n; j++){
+			printf("%+lfx%d ", mat[i][j], j+1);
 		}
-		if(i!=ind)
-		{
-			for(j=0;j<n+1;j++)
-			{
-				temp = m.M[i][j];
-				m.M[i][j] = m.M[ind][j];
-				m.M[ind][j] = temp;
-			}
+		printf("= %lf\n", mat[i][n]);
+	}
+}
+
+int fnz(double row[], int n){
+	int i, nz = 0;
+	for(i=0; i<n; i++){
+		if(row[i] != 0){
+			nz = i;
+			break;
 		}
 	}
-	return m;
+	return nz;
+}
+
+int rowmax(double row[], int n){
+	int i, max = 0;
+	for(i=0; i<n; i++)
+		if(row[i] > row[max])
+			max = i;
+	return max;
+}
+
+void swap(double* a, double* b, int n){
+	int i;
+	double temp[n];
+	for(i=0; i<=n; i++){
+		temp[i] = a[i];
+		a[i] = b[i];
+		b[i] = temp[i];
+	}
 }
