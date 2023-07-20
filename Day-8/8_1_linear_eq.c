@@ -1,8 +1,3 @@
-/*
-	NOTE:
-	Wikipedia provies a more viable and useful method for Gauss and Gauss-Jorban methods
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -13,7 +8,7 @@ typedef struct{
 	int n; //corresponds to number of equations
 } matrix;
 
-//To avoid accessing m.M repeatedly
+//For easier access; optional
 #define mat (m.M)
 #define mat_ (m->M)
 
@@ -43,7 +38,7 @@ void jacobi(matrix, int);
 //helper functions
 void print_eq(matrix); //prints equations
 int rowmax(double[], int); //locates maxima of a row
-int fnz(double[], int); //locates first nonzero element of a row
+int fnz(double*, int); //locates first nonzero element of a row
 void swap(double*, double*, int); //swaps two rows
 void rearrange(matrix*, int); //rearranges the matrix, with parameter "flag" indicating the method used
 
