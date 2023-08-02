@@ -216,7 +216,7 @@ void print_eq(matrix m){
 	}
 }
 
-int fnz(double row[], int n){
+int fnz(double *row, int n){
 	int i, nz = 0;
 	for(i=0; i<n; i++){
 		if(row[i] != 0){
