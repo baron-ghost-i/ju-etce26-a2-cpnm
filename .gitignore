@@ -1,2 +1,4 @@
 *.exe
 exe/
+Lab Reports/
+.vscode/
